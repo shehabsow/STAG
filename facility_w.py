@@ -5,6 +5,8 @@ from PIL import Image
 import pytz
 import io
 from io import BytesIO
+import sys
+sys.path.append('/path/to/directory/containing/git_backend')
 import git_backend as gb
 import os
 import base64
