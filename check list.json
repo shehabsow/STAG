@@ -1,0 +1,13 @@
+{
+  "check": [
+    {
+      "id": "check",
+      "Location": "Admin indoor",
+      "Element": "Floors",
+      "Detector Name": "",
+      "Date": "2024-10-06",
+      "Rating": 0,
+      "Comment": ""
+    }
+  ]
+}
