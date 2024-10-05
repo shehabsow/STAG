@@ -1,0 +1,20 @@
+{
+  "records": [
+    {
+      "id": "work_order1",
+      "Location": "Admin indoor",
+      "Element": "Floors",
+      "Detector Name": "",
+      "Date": "2024-10-06",
+      "Rating": 1,
+      "Responsible Person": "",
+      "Expected Repair Date": "",
+      "Actual Repair Date": "",
+      "image": "",
+      "Comment": "",
+      "Safety related": "Yes",
+      "Quality related": "Yes",
+      "Status": ""
+    }
+  ]
+}
