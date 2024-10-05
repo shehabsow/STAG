@@ -15,6 +15,22 @@
       "Safety related": "Yes",
       "Quality related": "Yes",
       "Status": ""
+    },
+    {
+      "id": "work_order2",
+      "Location": "Admin indoor",
+      "Element": "Floors",
+      "Detector Name": "",
+      "Date": "2024-10-06",
+      "Rating": 1,
+      "Responsible Person": "",
+      "Expected Repair Date": "",
+      "Actual Repair Date": "",
+      "image": "images/work_order2",
+      "Comment": "",
+      "Safety related": "Yes",
+      "Quality related": "Yes",
+      "Status": ""
     }
   ]
 }
