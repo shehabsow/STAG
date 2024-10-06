@@ -217,7 +217,7 @@ if page == 'STG-2024':
         ])
         
         with tab1:
-            display_tab('Reel Label (Small)')
+            display_tab('Reel Label (Small)', 20)
            
         with tab2:
             Large = df_Material[df_Material['Item Name'] == 'Reel Label (Large)'].sort_values(by='Item Name')
