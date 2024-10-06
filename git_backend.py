@@ -210,9 +210,7 @@ if page == 'STG-2024':
             
             display_tab('MultiPharma Cartridge', 5)
 
-        st.button("Update page")
-        csv = df_Material.to_csv(index=False)
-        st.download_button(label="Download updated sheet", data=csv, file_name='matril.csv', mime='text/csv')
+       
 
     if __name__ == '__main__':
         main()
