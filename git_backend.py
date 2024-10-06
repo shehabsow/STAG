@@ -120,11 +120,7 @@ def display_tab(tab_name, min_quantity):
     if st.button('Update Quantity', key=f'{tab_name}_update_button'):
         update_quantity(row_number, quantity, operation, st.session_state.username)
     
-    tab_alerts, df_tab = check_tab_quantities(tab_name, min_quantity)
-    if tab_alerts:
-        st.error(f"Low stock for items in {tab_name}:")
-        st.dataframe(df_tab.style.applymap(lambda x: 'background-color: red' if x < min_quantity else '', subset=['Actual Quantity']))
-
+   
 
 
 def export_to_excel(file_path="stock_report.xlsx"):
