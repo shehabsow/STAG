@@ -1,4 +1,4 @@
-import json
+aimport json
 from github import Github
 import json
 from datetime import datetime, timedelta
@@ -114,7 +114,7 @@ def check_tab_quantities(tab_name, min_quantity):
 # Function to display each tab
 def display_tab(tab_name, min_quantity):
     st.header(f'{tab_name}')
-    filtered_df = st.session_state.df[st.session_state.df['Item Name'] == tab_name]
+  
     st.dataframe(filtered_df, width=2000)
 
     if not filtered_df.empty:
