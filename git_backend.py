@@ -114,7 +114,7 @@ def check_tab_quantities(tab_name, min_quantity):
 # Function to display each tab
 def display_tab(tab_name, min_quantity):
     st.header(f'{tab_name}')
-    row_number = st.number_input(f'Select row number for {tab_name}:', min_value=0, max_value=len(st.session_state.df)-1, step=1, key=f'{tab_name}_row_number')
+    row_number = st.number_input(f'Select row number for {tab_name}:',  key=f'{tab_name}_row_number')
     
     st.markdown(f"""
     <div style='font-size: 20px; color: blue;'>Selected Item: {st.session_state.df.loc[row_number, 'Item Name']}</div>
