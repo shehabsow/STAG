@@ -105,11 +105,7 @@ def update_quantity(item_name, change_amount, operation, username):
     
     return False, "المادة غير موجودة"
 
-def check_tab_quantities(tab_name, min_quantity):
-    df_tab = data[['Item Name'] == tab_name]
-    tab_alerts = df_tab[df_tab['Actual Quantity'] < min_quantity]['Item Name'].tolist()
-   
-    return tab_alerts, df_tab
+
 
 # Function to display each tab
 def display_tab(tab_name, min_quantity):
