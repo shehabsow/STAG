@@ -1,636 +1,280 @@
 import json
 from github import Github
-import streamlit as st
-import base64
-import pandas as pd
-from datetime import datetime
-from PIL import Image
+import json
+from datetime import datetime, timedelta
 import pytz
-import io
-from io import BytesIO
-import git_backend as gb
-import os
-st.set_page_config(
-    layout="wide",
-    page_title='facility work order',
-    page_icon='🪙')
+import pandas as pd
 
+# تهيئة المنطقة الزمنية للقاهرة
 egypt_tz = pytz.timezone('Africa/Cairo')
-# GitHub setup
-g = Github(st.secrets["GITHUB_TOKEN"])
-repo = g.get_repo(st.secrets["REPO_NAME"])
 
 def load_data(file_path):
-    if file_path not in ("check list.json", "change log.json",'work order records.json','completed work order.json'):
-        return None
+    """تحميل البيانات من ملف JSON"""
     try:
-        content = repo.get_contents(file_path)
-        data = json.loads(content.decoded_content.decode())
-    except:
-        # If file does not exist or is not accessible, return a default structure based on the file type
-        if file_path == "check list.json":
-            data = {"check": []}
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        if file_path == "matrils.json":
+            return {"matril": []}
         elif file_path == "change log.json":
-            data = {"logs": []}
-        elif file_path == "work order records.json":
-            data = {"records": []}  # Adjust according to the structure of work order records
-        elif file_path == "completed work order.json":
-            data = {"completed": []}  # Adjust according to the structure of completed work orders
-    return data
+            return {"logs": []}
+    except json.JSONDecodeError:
+        return None
 
 def save_data(file_path, data):
-    try:
-        content = repo.get_contents(file_path)
-        repo.update_file(file_path, f"Update {file_path}", json.dumps(data, indent=2), content.sha)
-    except:
-        repo.create_file(file_path, f"Create {file_path}", json.dumps(data, indent=2))
+    """حفظ البيانات في ملف JSON"""
+    with open(file_path, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
 
-
-# Handle Images
-def save_image(image_data, image_name):
-    try:
-        image_path = f"images/{image_name}"
-        encoded_image = base64.b64encode(image_data)
-
-        try:
-            content = repo.get_contents(image_path)
-            repo.update_file(image_path, f"Update {image_name}", encoded_image, content.sha)
-        except:
-            repo.create_file(image_path, f"Create {image_name}", encoded_image)
-        return image_path
-    except Exception as e:
-        st.error(f"Error saving image: {str(e)}")
-        return None
-
-# Checklist CRUD operations
-def create_checklist_record(record):
-    data = load_data("check list.json")
-    new_record = {
-        "id": record.get("id", str(len(data["check"]) + 1)),
-        "Location": record.get("Location", ""),
-        "Element": record.get("Element", ""),
-        "Detector Name": record.get("Detector Name", ""),
-        "Date": record.get("Date",""),
-        "Rating": record.get("Rating", ""),
-        "Comment": record.get("Comment", ""),
+def create_checklist_record(item_data):
+    """إنشاء سجل جديد في قائمة المواد"""
+    data = load_data("matrils.json")
+    new_item = {
+        "Item Name": item_data.get("Item Name", ""),
+        "Actual Quantity": item_data.get("Actual Quantity", 0),
+        "Monthly Consumption": item_data.get("Monthly Consumption", 0),
+        "Coverage in Month": item_data.get("Coverage in Month", 0)
     }
-    data["check"].append(new_record)
-    save_data("check list.json", data)
-    return new_record
+    data["matril"].append(new_item)
+    save_data("matrils.json", data)
+    return new_item
 
-def update_checklist_record(record_id, updated_data):
-    data = load_data("check list.json")
-    for record in data["check"]:
-        if record["id"] == record_id:
-            record.update(updated_data)
-            save_data("check list.json", data)
-            return record
+def update_checklist_record(item_name, updated_data):
+    """تحديث سجل موجود في قائمة المواد"""
+    data = load_data("matrils.json")
+    for item in data["matril"]:
+        if item["Item Name"] == item_name:
+            item.update(updated_data)
+            save_data("matrils.json", data)
+            return item
     return None
 
-def create_work_order(work):
-    data = load_data("work order records.json")
-    new_record = {
-        "id": work.get("id", str(len(data["records"]) + 1)),
-        "Location": work.get("Location", ""),
-        "Element": work.get("Element", ""),
-        "Detector Name": work.get("Detector Name", ""),
-        "Date": work.get("Date",""),
-        "Rating": work.get("Rating", ""),
-        "Responsible Person": work.get("Responsible Person", ""),
-        "Expected Repair Date": work.get("Expected Repair Date", ""),
-        "Actual Repair Date": work.get("Actual Repair Date", ""),
-        "image": work.get("image", ""),
-        "Comment": work.get("Comment", ""),
-        "Safety related": work.get("Safety related", ""),
-        "Quality related": work.get("Quality related", ""),
-        "Status": work.get("Status", "")
-    }
-    data["records"].append(new_record)
-    save_data("work order records.json", data)
-    return new_record 
-   
-
-def update_work_order(work_id, updated_data):
-    data = load_data("work order records.json")
-    for record in data["records"]:
-        if record["id"] == work_id:
-            record.update(updated_data)
-            save_data("work order records.json", data)
-            return record
-    return None
-
-def create_change_log_entry(entry):
+def create_change_log_entry(entry_data):
+    """إنشاء سجل جديد في سجل التغييرات"""
     data = load_data("change log.json")
     new_entry = {
-        "id": entry.get("id", ""),
-        "Modifier Name": entry.get("Modifier Name", ""),
-        "Modification Date": entry.get("Modification Date"),
-        "Modification Type": entry.get("Modification Type", ""),
-        "New Date": entry.get("New Date", "")
+        "timestamp": datetime.now(egypt_tz).strftime("%Y-%m-%d %H:%M:%S"),
+        "Item Name": entry_data.get("Item Name", ""),
+        "user": entry_data.get("user", ""),
+        "last_quantity": entry_data.get("last_quantity", 0),
+        "new_quantity": entry_data.get("new_quantity", 0),
+        "operation": entry_data.get("operation", ""),
+        "change_amount": entry_data.get("change_amount", 0)
     }
     data["logs"].append(new_entry)
     save_data("change log.json", data)
     return new_entry
 
-def update_change_log_entry(entry_id, updated_data):
-    data = load_data("change log.json")
-    for record in data["logs"]:
-        if record["id"] == entry_id:
-            record.update(updated_data)
-            save_data("change log.json", data)
-            return record
-    return None
-
-def load_work_order():
-    data = gb.load_data("work order records.json")
-    if data:
-        df = pd.DataFrame(data["records"])
-        for col in ['Date', 'Expected Repair Date', 'Actual Repair Date']:
-            if col in df.columns:
-                df[col] = pd.to_datetime(df[col], errors='coerce')
-        return df
-    return pd.DataFrame(columns=[
-        'id', 'Location', 'Element', 'Detector Name', 
-        'Date', 'Rating', 'Responsible Person', 
-        'Expected Repair Date', 'Actual Repair Date', 'Image', 'Comment', 'Safety related','Quality related',"Status"
-    ])
-
-def load_check_list():
-    data = gb.load_data("check list.json")
-    if data:
-        return pd.DataFrame(data["check"])
-    return pd.DataFrame(columns=[
-        'id', 'Location', 'Element', 
-        'Detector Name', 'Date','Rating','Comment'
-    ])
-
-
-
-def load_completed_work_order():
-    data = gb.load_data("completed work order.json")
-    if data:
-        return pd.DataFrame(data["completed"])
-    return pd.DataFrame(columns=['id', 'Location', 'Element', 'Detector Name', 
-        'Date', 'Rating', 'Responsible Person', 
-        'Expected Repair Date', 'Actual Repair Date', 'Image', 'Comment', 'Safety related','Quality related'
-        ])
-
-
-def load_change_log():
-    data = gb.load_data("change log.json")
-    if data:
-        return pd.DataFrame(data["logs"])
-    return pd.DataFrame(columns=[
-        'id', 'Modifier Name', 'Modification Date', 
-        'Modification Type', 'New Date'
-    ])
-def to_excel(df):
-    for col in df.select_dtypes(include=['datetime64[ns, UTC]', 'datetime64[ns]']):
-        df[col] = df[col].apply(lambda x: x.tz_localize(None) if x.tzinfo else x)
-    output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
-        df.to_excel(writer, index=False, sheet_name='Sheet1')
-    return output.getvalue()
-# Initialize session state
-if 'check_list_df' not in st.session_state:
-    st.session_state.check_list_df = load_check_list()
-
-if 'work_order_df' not in st.session_state:
-    st.session_state.work_order_df = load_work_order()
-
-if 'completed_work_df' not in st.session_state:
-    st.session_state.completed_work_df = load_completed_work_order()
-
-if 'log_df' not in st.session_state:
-    st.session_state.log_df = load_change_log()
-
-
-
-checklist_items = {
-    "Floors": [
-        "Inspect floors for visible damage and stains"
-    ],
-    "Lights": [
-        "Ensure all light fixtures are operational."
-    ],
-    "Electrical Outlets": [
-        "Inspect all electrical outlets for visible damage",
-        "Ensure all outlet covers are installed properly and not damaged.",
-        "Verify all electrical outlets are labeled"
-    ],
-    "Doors": [
-        "Inspect door for visible damage and paint chipping",
-        "Check door hardware for proper operation (badge access, door handles)",
-        "Ensure doors close and latch properly",
-        "Inspect door seals"
-    ],
-    "Ceilings": [
-        "Inspect ceilings for visible damage (including cracks, dings, dents, holes) and paint chipping",
-        "Inspect ceiling penetrations around piping and ducting to ensure seals fully cover any gaps",
-        "Sealing material is not dry or cracked"
-    ],
-    "Walls": [
-        "Inspect walls for visible damage (including cracks, dings, dents, holes) and paint chipping",
-        "Inspect all wall penetrations around piping to ensure seals fully cover any gaps and holes",
-        "Sealing material is not dry or cracked."
-    ],
-    "Windows": [
-        "Inspect windows for visible damage and cracks",
-        "Inspect exterior window seals for cracking, holes, and gaps",
-        "Inspect curtains for visible damage and standardize"
-    ],
-    "Visuals": [
-        "Inspect visuals for visible damage or fading",
-        "Ensure visuals are updated"
-    ],
-    "Fixtures and fittings": [
-        "Inspect fixtures such as faucets, WC bowls, bathroom sinks, mirrors, etc.",
-        "Inspect cafeteria & coffee corner fittings (coffee machines, kettles, Bain Marie, etc.)",
-        "Inspect fixture and fitting condition for visible damage"
-    ],
-    "Furniture": [
-        "Inspect movable office furniture, desks, chairs, sofas, tables, cabinets, etc.",
-        "Inspect furniture condition for visible damage"
-    ]
-}
-
-repair_personnel = ['shehab', 'sameh', 'kaleed', 'yasser', 'masry',"zeinab",'wael']
-
-
-def get_next_event_id():
-    if st.session_state.work_order_df.empty or 'event id' not in st.session_state.work_order_df.columns:
-        return 'Work Order 1'
-
-    event_ids = st.session_state.work_order_df['event id'].dropna().tolist()
-
-    if not event_ids:
-        return 'Work Order 1'
-
-    try:
-        last_id = event_ids[-1]
-        if isinstance(last_id, str):
-            last_num = int(last_id.split(' ')[-1])
-        else:
-            last_num = 0
-    except (ValueError, IndexError):
-        last_num = 0
-
-    next_num = last_num + 1
-    return f'Work Order {next_num}'
-
-page = st.sidebar.radio('Select page', ['Event Logging', 'Work Shop Order', 'View Change Log'])
-
-if page == 'Event Logging':
-    work_order = load_check_list()
-    col1, col2 = st.columns([2, 0.5])
-    with col1:
-        st.markdown("""
-                <h2 style='text-align: center; font-size: 40px; color: #A52A2A;'>
-                    Facility Maintenance Checklist:
-                </h2>
-                """, unsafe_allow_html=True)
-    with col2:
-        st.button("Update page",key='Update 2')
-        search_keyword = st.session_state.get('search_keyword', '')
-        search_keyword = st.text_input("Enter keyword to search:", search_keyword)
-        search_button = st.button("Search")
-        search_option = 'All Columns'    
-    def search_in_dataframe(df_Material, keyword, option):
-        if option == 'All Columns':
-            result = df_Material[df_Material.apply(lambda row: row.astype(str).str.contains(keyword, case=False).any(), axis=1)]
-        else:
-            result = df_Material[df_Material[option].astype(str).str.contains(keyword, case=False)]
-        return result
-    if st.session_state.get('refreshed', False):
-        st.session_state.search_keyword = ''
-        st.session_state.refreshed = False
-    if search_button and search_keyword:
-        st.session_state.search_keyword = search_keyword
-        search_results = search_in_dataframe(st.session_state.work_order_df, search_keyword, search_option)
-        st.write(f"Search results for '{search_keyword}'in{search_option}:")
-        st.dataframe(search_results, width=1000, height=200)
-    st.session_state.refreshed = True
-
+def update_quantity(item_name, change_amount, operation, username):
+    """تحديث كمية المادة وتسجيل التغيير"""
+    data = load_data("matrils.json")
     
-    col1, col2 = st.columns([2, 6])
-    with col1:
-        st.markdown(f"<h3 style='color:black; font-size:30px;'>Select Location:</h3>", unsafe_allow_html=True)
-        locations = ['Admin indoor', 'QC lab & Sampling room', 'Processing', 'Receiving area & Reject room',
-                     'Technical corridor', 'Packaging', 'Warehouse', 'Utilities & Area Surround',
-                     'Outdoor & security gates', 'Electric rooms', 'Waste WTP & Incinerator',
-                     'Service Building & Garden Store', 'Pumps & Gas Rooms']
-    
-        selected_location = st.selectbox('Choose form these areas',locations)
-        if selected_location:
-            st.markdown(
-            f'<p style="font-size: 23px; color: green;">You selected: <span style="font-size: 25px; color: #A52A2A;">{selected_location}</span></p>'
-            '<hr style="border: 1px solid  black;"/>', 
-            unsafe_allow_html=True
-        )
-
-    
-    col1, col2 = st.columns([3,3])
-    with col1:
-        for category, items in checklist_items.items():
-            st.markdown(f"<h3 style='color:green; font-size:30px;'>{category}.</h3>", unsafe_allow_html=True)
-            for item in items:
-                st.markdown(f"<span style='color:blue; font-size:18px;'>* {item}</span>", unsafe_allow_html=True)
-                
-            col1a, col2a, col3a, col4a = st.columns([1, 2, 2, 2])
-            Event_Detector_Name = col2a.text_input('Detector Name', key=f"detector_name_{category}_{selected_location}")
-            Rating = col1a.selectbox('Rating', [0, 1, 2, 3, 'N/A'], key=f"rating_{category}_{selected_location}")
-            comment = col3a.text_input('Comment', key=f"comment_{category}_{selected_location}")
-            responsible_person = col4a.selectbox('Responsible Person', [''] + repair_personnel, key=f"person_{category}_{selected_location}")
-            uploaded_file = st.file_uploader(f"Upload Image ({category})", type=["jpg", "jpeg", "png"], key=f"image_{category}_{selected_location}")
+    for item in data["matril"]:
+        if item["Item Name"] == item_name:
+            last_quantity = item["Actual Quantity"]
             
-            if Rating in [1, 2, 3]: 
-                st.markdown(f"<p style='color: red; font-size: 22px;'><b>Is this Safety related?</b></p>", unsafe_allow_html=True)
-                risk_value = st.checkbox('Safety related?', key=f'high_risk_checkbox_{category}_{selected_location}')
-                st.markdown(f"<p style='color: red; font-size: 22px;'><b>Is this Quality related?</b></p>", unsafe_allow_html=True)
-                Quality_value = st.checkbox('Quality related?', key=f'Quality_related_checkbox_{category}_{selected_location}')
-            else:
-                risk_value = None
-                Quality_value = None
-            button_key = f"add_{category}_{selected_location}"
-            
-            if st.button(f'Add', key=button_key):
-                length = len(st.session_state.work_order_df)
-                if Rating in [0, 'N/A']:
-                    event_id = 'check'
-                    new_check_row = {
-                        'id': event_id,
-                        'Location': selected_location,
-                        'Rating': Rating,
-                        'Element': category,
-                        'Detector Name': Event_Detector_Name,
-                        'Date': datetime.now(egypt_tz).strftime("%Y-%m-%d"),
-                        'Comment': comment}
-                    
-                    gb.create_checklist_record(new_check_row)
-                    st.session_state.check_list_df = load_check_list()
-                    st.success(f"Event recorded successfully! '{category}'!")
+            if operation == "add":
+                item["Actual Quantity"] += change_amount
+            elif operation == "subtract":
+                if item["Actual Quantity"] >= change_amount:
+                    item["Actual Quantity"] -= change_amount
                 else:
-                    event_id = 'work_order' + str(length + 1)
-                    image_path = ""
-                    if uploaded_file is not None:
-                        try:
-                            image = Image.open(uploaded_file)
-                            if image.mode == "RGBA":
-                                image = image.convert("RGB")
-                            max_size = (800, 600)
-                            image.thumbnail(max_size)
-                            image_buffer = BytesIO()
-                            image.save(image_buffer, format="JPEG")
-                            image_data = image_buffer.getvalue()
-                            ext=uploaded_file.name.split('.')[-1]
-                            image_name = f"{event_id}"
-                            image_path = gb.save_image(image_data, image_name)
-                            if image_path:
-                                st.success(f"Image saved successfully as {image_name}")
-                            else:
-                                st.error("Failed to save the image")
-                        except Exception as e:
-                            st.error(f"An error occurred while saving the image: {str(e)}")
-                            image_path = ""
-                            
-                    new_order = {
-                        'id': event_id,
-                        'Location': selected_location,
-                        'Element': category,
-                        'Detector Name': Event_Detector_Name,
-                        'Date': datetime.now(egypt_tz).strftime("%Y-%m-%d"),
-                        'Rating': Rating,
-                        'Comment': comment,
-                        'Responsible Person': responsible_person,
-                        'Expected Repair Date': '',
-                        'Actual Repair Date': '',
-                        'image': image_path,
-                        'Safety related': 'Yes' if risk_value else 'No',
-                        'Quality related': 'Yes' if Quality_value else 'No'
-                    }
-                    
-                    gb.create_work_order(new_order)
-                    st.session_state.work_order_df = load_work_order()
-                    st.success(f"Event recorded successfully! '{category}'!") 
+                    return False, "الكمية المطلوبة أكبر من المتوفر"
+            
+            save_data("matrils.json", data)
+            
+            # تسجيل التغيير
+            log_entry = {
+                "Item Name": item_name,
+                "user": username,
+                "last_quantity": last_quantity,
+                "new_quantity": item["Actual Quantity"],
+                "operation": operation,
+                "change_amount": change_amount
+            }
+            create_change_log_entry(log_entry)
+            
+            return True, f"تم تحديث الكمية بنجاح. الكمية الجديدة: {item['Actual Quantity']}"
+    
+    return False, "المادة غير موجودة"
 
-    with col2:
-        st.markdown("""
-        <div style="border: 2px solid #ffeb3b; padding: 20px; background-color: #e0f7fa; color: #007BFF; border-radius: 5px; width: 100%">
-            <h4 style='text-align: center;color: blue;'>Inspection Rating System.</h4>
-            <ul style="color: green;">
-                <li style="font-size: 18px;">0: Good condition. Well, maintained, no action required. Satisfactory Performance</li>
-                <li style="font-size: 18px;">1: Moderate condition. Should monitor. Satisfactory Performance.</li>
-                <li style="font-size: 18px;">2: Degraded condition. Routine maintenance and repair needed. Unsatisfactory Performance.</li>
-                <li style="font-size: 18px;">3: Serious condition. Immediate need for repair or replacement. Unsatisfactory Performance.</li>
-                <li style="font-size: 18px;">N/A :Not applicable</li>
-            </ul>
-        </div>
+def check_tab_quantities(tab_name, min_quantity):
+    df_tab = st.session_state.df[st.session_state.df['Item Name'] == tab_name]
+    tab_alerts = df_tab[df_tab['Actual Quantity'] < min_quantity]['Item Name'].tolist()
+   
+    return tab_alerts, df_tab
+
+# Function to display each tab
+def display_tab(tab_name, min_quantity):
+    st.header(f'{tab_name}')
+    filtered_df = st.session_state.df[st.session_state.df['Item Name'] == tab_name]
+    st.dataframe(filtered_df, width=2000)
+
+    if not filtered_df.empty:
+        row_number = filtered_df.index[0]
+        row_number = st.number_input(f'Select row number for {tab_name}:', min_value=0, max_value=len(st.session_state.df)-1, step=1, key=f'{tab_name}_row_number')
+        
+        st.markdown(f"""
+        <div style='font-size: 20px; color: blue;'>Selected Item: {st.session_state.df.loc[row_number, 'Item Name']}</div>
+        <div style='font-size: 20px; color: blue;'>Current Quantity: {int(st.session_state.df.loc[row_number, 'Actual Quantity'])}</div>
         """, unsafe_allow_html=True)
-        st.markdown("""
-                <h2 style='text-align: center; font-size: 30px; color: #A52A2A;'>
-                    checklist record:
-                </h2>
-                """, unsafe_allow_html=True)
         
-        latest_data = gb.load_data("check list.json")
-        if latest_data and "check" in latest_data:
-            df = pd.DataFrame(latest_data["check"])
-            st.dataframe(df)
-            excel_data_checklist = to_excel(st.session_state.check_list_df)
-            st.download_button(
-                label="Download Checklist.",
-                data=excel_data_checklist,
-                file_name='check list.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                key='download check list')
-        st.markdown("""
-            <h2 style='text-align: center; font-size: 30px; color: #A52A2A;'>
-                Facility Maintenance:
-            </h2>
-            """, unsafe_allow_html=True)
+        quantity = st.number_input(f'Enter quantity for {tab_name}:', min_value=1, step=1, key=f'{tab_name}_quantity')
+        operation = st.radio(f'Choose operation for {tab_name}:', ('add', 'subtract'), key=f'{tab_name}_operation')
+    
+        if st.button('Update Quantity', key=f'{tab_name}_update_button'):
+            update_quantity(row_number, quantity, operation, st.session_state.username)
         
-        work_data = gb.load_data("work order records.json")
-        if work_data and "records" in work_data:
-            df = pd.DataFrame(work_data["records"])
-            st.dataframe(df)
-            excel_data_checklist = to_excel(st.session_state.work_order_df)
-            st.download_button(
-                label="Download work order.",
-                data=excel_data_checklist,
-                file_name='work order records.xlsx',
-                mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                key='download work order records')
+        tab_alerts, df_tab = check_tab_quantities(tab_name, min_quantity)
+        if tab_alerts:
+            st.error(f"Low stock for items in {tab_name}:")
+            st.dataframe(df_tab.style.applymap(lambda x: 'background-color: red' if x < min_quantity else '', subset=['Actual Quantity']))
 
-        else:
-            st.write("No checklist data available.")
-
-
-if page == 'Work Shop Order':
-    st.markdown("""
-                <h2 style='text-align: center; font-size: 35px; color: #A52A2A;'>
-                    Work Shop Order status:
-                </h2>
-                """, unsafe_allow_html=True)
-
-    col1, col2 = st.columns([2, 3])
-
+def get_low_stock_items():
+    """الحصول على قائمة المواد التي تحتاج إلى تجديد المخزون"""
+    data = load_data("matrils.json")
+    low_stock = []
     
-    with col1:
-        if not st.session_state.work_order_df.empty:
-            selected_names = st.multiselect('Select Responsible Person(s)', repair_personnel)
-            
-            filtered_events = st.session_state.work_order_df[st.session_state.work_order_df['Responsible Person'].isin(selected_names)]
-
-            if not filtered_events.empty:
-                event_ids = filtered_events['id'].tolist()
-                selected_event_id = st.selectbox('Select Event ID', event_ids)
-
-                if selected_event_id:
-                    selected_event = filtered_events[filtered_events['id'] == selected_event_id]
-                    if not selected_event.empty:
-                        st.session_state.selected_event = selected_event  
-
-                modifier_name = st.text_input('Modifier Name')
-
-                if modifier_name in repair_personnel:
-                    Expected_repair_Date = st.date_input('Expected repair Date')
-                    Actual_Repair_Date = st.date_input('Actual Repair Date')
-                    update_start_button = st.button('Update Expected repair Date')
-                    update_end_button = st.button('Update Actual Repair Date')
-
-                    
-                    if update_start_button:
-                        if selected_event_id in st.session_state.work_order_df['id'].values:
-                            updated_data = {
-                                'Expected Repair Date': Expected_repair_Date.strftime("%Y-%m-%d"),
-                                'Status': 'not completed'
-                            }
-                            gb.update_work_order(selected_event_id, updated_data)
-                            st.success('Expected repair Date Updated successfully')
-                    
-                            new_log_entry = {
-                                'id': selected_event_id,  
-                                'Modifier Name': modifier_name,
-                                'Modification Date': datetime.now(egypt_tz).strftime("%Y-%m-%d"),
-                                'Modification Type': 'Update Expected repair Date',
-                                'New Date': Expected_repair_Date.strftime("%Y-%m-%d")
-                            }
-                            gb.create_change_log_entry(new_log_entry)
-                    
-                    
-                    if update_end_button:
-                        if selected_event_id in st.session_state.work_order_df['id'].values:
-                            updated_data = {
-                                'Actual Repair Date': Actual_Repair_Date.strftime("%Y-%m-%d"),
-                                'Status': 'Done'
-                            }
-                            gb.update_work_order(selected_event_id, updated_data)
-                            st.success('Actual Repair Date Updated successfully')
-                    
-                            new_log_entry = {
-                                'id': selected_event_id,  
-                                'Modifier Name': modifier_name,
-                                'Modification Date': datetime.now(egypt_tz).strftime("%Y-%m-%d"),
-                                'Modification Type': 'Update Actual Repair Date',
-                                'New Date': Actual_Repair_Date.strftime("%Y-%m-%d")
-                            }
-                            gb.create_change_log_entry(new_log_entry)
-
-  
-                            
-            else:
-                st.warning("No events found for the selected person(s).")
-        else:
-            st.warning("No work orders available.")
-
-    with col2:
-            if 'selected_event' in st.session_state and not st.session_state.selected_event.empty:
-                selected_event = st.session_state.selected_event
-                
-                # عرض تفاصيل الحدث ك DataFrame
-                st.dataframe(selected_event)
+    for item in data["matril"]:
+        if item["Actual Quantity"] <= item["Monthly Consumption"]:
+            low_stock.append({
+                "Item Name": item["Item Name"],
+                "Actual Quantity": item["Actual Quantity"],
+                "Monthly Consumption": item["Monthly Consumption"]
+            })
     
-                # Display the image if it exists
-                image_path = selected_event['image'].iloc[0]
-                if image_path:
-                    try:
-                        # Get the encoded image content from GitHub 
-                        image_content = gb.repo.get_contents(image_path)
-                        decoded_image_data = base64.b64decode(image_content.decoded_content)
-                        
-                        # Open the image using PIL
-                        image = Image.open(BytesIO(decoded_image_data))
-                             
-                        # Display the image
-                        st.image(image, caption=f'Image for Event {selected_event["id"].values[0]}')
-                    
-                    except Exception as e:
-                        st.warning(f"Error loading image: {str(e)}")
-                else:
-                    st.warning("No image available for this event.")
-            else:
-                st.warning("Select work order to view details.")
+    return low_stock
+
+def get_item_history(item_name):
+    """الحصول على سجل التغييرات الخاص بمادة معينة"""
+    data = load_data("change log.json")
+    history = [entry for entry in data["logs"] if entry["Item Name"] == item_name]
+    return history
+
+def export_to_excel(file_path="stock_report.xlsx"):
+    """تصدير البيانات إلى ملف Excel"""
+    data = load_data("matrils.json")
+    df = pd.DataFrame(data["matril"])
+    df.to_excel(file_path, index=False)
+    return file_path
+
+
+
+
+page = st.sidebar.radio('Select page', ['STG-2024', 'View Logs'])
+    
+    if page == 'STG-2024':
+        def main():
             st.markdown("""
-            <h2 style='text-align: center; font-size: 27px; color: #A52A2A;'>
-                Status of work order:
-            </h2>
+            <style>
+                .stProgress > div > div > div {
+                    background-color: #FFD700;
+                    border-radius: 50%;
+                }
+            </style>
             """, unsafe_allow_html=True)
-            col1, col2 = st.columns([1, 2])
+            
+            with st.spinner("Data loaded successfully!"):
+                import time
+                time.sleep(1)
+            
+            col1, col2 = st.columns([2, 0.75])
             with col1:
-                order_status = st.selectbox("Select Order Status", ("Completed", "Not Completed"))
-                all_work_orders = load_work_order()
-            if 'Status' not in all_work_orders.columns:
-# إضافة العمود كعمود فارغ
-                all_work_orders['Status'] = ''
-            if order_status == "Completed":
-                completed_work_orders = all_work_orders[all_work_orders['Status'] == 'Done']
-                if not completed_work_orders.empty:
-                    st.markdown("""
-                <h2 style='text-align: ; font-size: 28px; color: green;'>
-                    Completed Orders:
-                </h2>
+                st.markdown("""
+                    <h2 style='text-align: center; font-size: 40px; color: red;'>
+                        Find your parts
+                    </h2>
                 """, unsafe_allow_html=True)
-                       
-                    st.dataframe(completed_work_orders)
-                    excel_data_completed = to_excel(completed_work_orders)
-                    st.download_button(
-                        label="Download Completed Work Orders",
-                        data=excel_data_completed,
-                        file_name='completed_work_orders.xlsx',
-                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        key='download_completed_work'
-                    )
-                    
+            
+            with col2:
+                search_keyword = st.session_state.get('search_keyword', '')
+                search_keyword = st.text_input("Enter keyword to search:", search_keyword)
+                search_button = st.button("Search")
+                search_option = 'All Columns'
+            
+            def search_in_dataframe(df_Material, keyword, option):
+                if option == 'All Columns':
+                    result = df_Material[df_Material.apply(lambda row: row.astype(str).str.contains(keyword, case=False).any(), axis=1)]
                 else:
-                    st.warning("No completed work orders found.")
-                    
-            elif order_status == "Not Completed":
-                # Filter and display not completed work orders
-                not_completed_orders = all_work_orders[all_work_orders['Status'] != 'Done']
-                
-                if not not_completed_orders.empty:
-                    st.markdown("""
-                <h2 style='text-align: ; font-size: 28px; color: red;'>
-                    Not completed orders:
-                </h2>
-                """, unsafe_allow_html=True)
-                    st.dataframe(not_completed_orders)
-                    excel_data_not_completed = to_excel(not_completed_orders)
-                    st.download_button(
-                        label="Download not Completed Work Orders",
-                        data=excel_data_not_completed,
-                        file_name='not completed_work_orders.xlsx',
-                        mime='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                        key='download_not_completed_work'
-                    )
-                else:
-                    st.warning("No not completed work orders found.")
-       
-                    
+                    result = df_Material[df_Material[option].astype(str).str.contains(keyword, case=False)]
+                return result
+            
+            if st.session_state.get('refreshed', False):
+                st.session_state.search_keyword = ''
+                st.session_state.refreshed = False
+            
+            if search_button and search_keyword:
+                st.session_state.search_keyword = search_keyword
+                search_results = search_in_dataframe(st.session_state.df, search_keyword, search_option)
+                st.write(f"Search results for '{search_keyword}'in{search_option}:")
+                st.dataframe(search_results, width=1000, height=200)
+            st.session_state.refreshed = True 
+            
+            tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
+                'Reel Label (Small)', 'Reel Label (Large)',
+                'Ink Reels for Label', 'Red Tape', 'Adhasive Tape', 'Cartridges', 'MultiPharma Cartridge'
+            ])
+            
+            with tab1:
+                Small = df_Material[df_Material['Item Name'] == 'Reel Label (Small)'].sort_values(by='Item Name')
+                st.dataframe(Small, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('Reel Label (Small)', 20)
+               
+            with tab2:
+                Large = df_Material[df_Material['Item Name'] == 'Reel Label (Large)'].sort_values(by='Item Name')
+                st.dataframe(Large, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('Reel Label (Large)', 60)
+            with tab3:
+                Ink = df_Material[df_Material['Item Name'] == 'Ink Reels for Label'].sort_values(by='Item Name')
+                st.dataframe(Ink, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('Ink Reels for Label', 20)
+            with tab4:
+                Tape = df_Material[df_Material['Item Name'] == 'Red Tape'].sort_values(by='Item Name')
+                st.dataframe(Tape, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('Red Tape', 5)
+            with tab5:
+                Adhesive = df_Material[df_Material['Item Name'] == 'Adhasive Tape'].sort_values(by='Item Name')
+                st.dataframe(Adhesive, width=2000)
+                col4, col5, col6 = st.columns([2,2,2])
+                with col4:
+                    display_tab('Adhasive Tape', 100)
+            with tab6:
+                Cartridges = df_Material[df_Material['Item Name'] == 'Cartridges'].sort_values(by='Item Name')
+                st.dataframe(Cartridges, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('Cartridges', 50)
+            with tab7:
+                MultiPharma = df_Material[df_Material['Item Name'] == 'MultiPharma Cartridge'].sort_values(by='Item Name')
+                st.dataframe(MultiPharma, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('MultiPharma Cartridge', 5)
 
-elif page == 'View Change Log':
-    st.title('View Change Log')
+            st.button("Update page")
+            csv = df_Material.to_csv(index=False)
+            st.download_button(label="Download updated sheet", data=csv, file_name='matril.csv', mime='text/csv')
     
-    st.session_state.log_df = gb.load_change_log()
-    st.dataframe(st.session_state.log_df)
-    
+        if __name__ == '__main__':
+            main()
+    elif page == 'View Logs':
+        st.header('User Activity Logs')
+        load_logs()  # Load logs when page is changed to 'View Logs'
+
+        if st.session_state.logs:
+            logs_df = pd.DataFrame(st.session_state.logs)
+            st.dataframe(logs_df, width=1000, height=400)
+            csv = logs_df.to_csv(index=False)
+            st.download_button(label="Download Logs as CSV", data=csv, file_name='logs.csv', mime='text/csv')
+            #if st.button("Clear Logs"):
+                #clear_logs()
+        else:
+            st.write("No logs available.")
