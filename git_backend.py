@@ -7,13 +7,7 @@ import pandas as pd
 import streamlit as st
 # تهيئة المنطقة الزمنية للقاهرة
 egypt_tz = pytz.timezone('Africa/Cairo')
-if 'df' not in st.session_state:
-    data = load_data("matrils.json")  # تحميل البيانات من ملف JSON
-    if data:  # إذا تم العثور على بيانات
-        # تحويل البيانات إلى DataFrame وحفظها في session_state
-        st.session_state['df'] = pd.DataFrame(data["matril"])
-    else:
-        st.error("لم يتم العثور على بيانات!")
+
 def load_data(file_path):
     """تحميل البيانات من ملف JSON"""
     try:
@@ -26,7 +20,14 @@ def load_data(file_path):
             return {"logs": []}
     except json.JSONDecodeError:
         return None
-
+if 'df' not in st.session_state:
+    data = load_data("matrils.json")  # تحميل البيانات من ملف JSON
+    if data:  # إذا تم العثور على بيانات
+        # تحويل البيانات إلى DataFrame وحفظها في session_state
+        st.session_state['df'] = pd.DataFrame(data["matril"])
+    else:
+        st.error("لم يتم العثور على بيانات!")
+        
 def save_data(file_path, data):
     """حفظ البيانات في ملف JSON"""
     with open(file_path, 'w', encoding='utf-8') as f:
