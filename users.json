@@ -1,1 +1,46 @@
-{"knhp322": {"password": "411900", "first_login": false, "name": "Shehab Ayman", "last_password_update": "2024-07-16 20:47:10.189260+02:00"}, "karm": {"password": "karm", "first_login": true, "name": "karm", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}, "kxsv748": {"password": "kxsv748", "first_login": true, "name": "Mohamed El masry", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}, "kvwp553": {"password": "kvwp553", "first_login": true, "name": "sameh", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}, "knfb489": {"password": "knfb489", "first_login": true, "name": "Yasser Hassan", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}, "kjjd308": {"password": "kjjd308", "first_login": true, "name": "Kaleed", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}, "kibx268": {"password": "kibx268", "first_login": true, "name": "Zeinab Mobarak", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}, "engy": {"password": "1234", "first_login": true, "name": "D.Engy", "last_password_update": "2024-07-16 20:47:10.182278+02:00"}}
+{
+  "matril": [
+    {
+      "Item Name": "Reel Label (Small)",
+      "Actual Quantity": 218,
+      "Monthly Consumption": 10.0,
+      "Coverage in Month": 20
+    },
+    {
+      "Item Name": "Reel Label (Large)",
+      "Actual Quantity": 199,
+      "Monthly Consumption": 20.0,
+      "Coverage in Month": 60
+    },
+    {
+      "Item Name": "Ink Reels for Label",
+      "Actual Quantity": 111,
+      "Monthly Consumption": 10.0,
+      "Coverage in Month": 20
+    },
+    {
+      "Item Name": "Red Tape",
+      "Actual Quantity": 35,
+      "Monthly Consumption": 1.0,
+      "Coverage in Month": 5
+    },
+    {
+      "Item Name": "Adhasive Tape",
+      "Actual Quantity": 152,
+      "Monthly Consumption": 20.0,
+      "Coverage in Month": 100
+    },
+    {
+      "Item Name": "Cartridges",
+      "Actual Quantity": 633,
+      "Monthly Consumption": 45.0,
+      "Coverage in Month": 50
+    },
+    {
+      "Item Name": "MultiPharma Cartridge",
+      "Actual Quantity": 7,
+      "Monthly Consumption": 2.0,
+      "Coverage in Month": 5
+    }
+  ]
+}
