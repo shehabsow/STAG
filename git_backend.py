@@ -1,4 +1,4 @@
-aimport json
+import json
 from github import Github
 import json
 from datetime import datetime, timedelta
