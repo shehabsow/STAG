@@ -116,10 +116,7 @@ def display_tab(tab_name, min_quantity):
     st.header(f'{tab_name}')
     row_number = st.number_input(f'Select row number for {tab_name}:',  key=f'{tab_name}_row_number')
     
-    st.markdown(f"""
-    <div style='font-size: 20px; color: blue;'>Selected Item: {st.session_state.df.loc[row_number, 'Item Name']}</div>
-    <div style='font-size: 20px; color: blue;'>Current Quantity: {int(st.session_state.df.loc[row_number, 'Actual Quantity'])}</div>
-    """, unsafe_allow_html=True)
+   
     
     quantity = st.number_input(f'Enter quantity for {tab_name}:', min_value=1, step=1, key=f'{tab_name}_quantity')
     operation = st.radio(f'Choose operation for {tab_name}:', ('add', 'subtract'), key=f'{tab_name}_operation')
