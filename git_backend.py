@@ -217,11 +217,7 @@ if page == 'STG-2024':
         ])
         
         with tab1:
-            Small = df_Material[df_Material['Item Name'] == 'Reel Label (Small)'].sort_values(by='Item Name')
-            st.dataframe(Small, width=2000)
-            col4, col5, col6 = st.columns([2,1,2])
-            with col4:
-                display_tab('Reel Label (Small)', 20)
+            display_tab('Reel Label (Small)')
            
         with tab2:
             Large = df_Material[df_Material['Item Name'] == 'Reel Label (Large)'].sort_values(by='Item Name')
