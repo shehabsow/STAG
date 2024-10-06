@@ -114,49 +114,25 @@ def check_tab_quantities(tab_name, min_quantity):
 # Function to display each tab
 def display_tab(tab_name, min_quantity):
     st.header(f'{tab_name}')
-  
-    st.dataframe(filtered_df, width=2000)
-
-    if not filtered_df.empty:
-        row_number = filtered_df.index[0]
-        row_number = st.number_input(f'Select row number for {tab_name}:', min_value=0, max_value=len(st.session_state.df)-1, step=1, key=f'{tab_name}_row_number')
-        
-        st.markdown(f"""
-        <div style='font-size: 20px; color: blue;'>Selected Item: {st.session_state.df.loc[row_number, 'Item Name']}</div>
-        <div style='font-size: 20px; color: blue;'>Current Quantity: {int(st.session_state.df.loc[row_number, 'Actual Quantity'])}</div>
-        """, unsafe_allow_html=True)
-        
-        quantity = st.number_input(f'Enter quantity for {tab_name}:', min_value=1, step=1, key=f'{tab_name}_quantity')
-        operation = st.radio(f'Choose operation for {tab_name}:', ('add', 'subtract'), key=f'{tab_name}_operation')
+    row_number = st.number_input(f'Select row number for {tab_name}:', min_value=0, max_value=len(st.session_state.df)-1, step=1, key=f'{tab_name}_row_number')
     
-        if st.button('Update Quantity', key=f'{tab_name}_update_button'):
-            update_quantity(row_number, quantity, operation, st.session_state.username)
-        
-        tab_alerts, df_tab = check_tab_quantities(tab_name, min_quantity)
-        if tab_alerts:
-            st.error(f"Low stock for items in {tab_name}:")
-            st.dataframe(df_tab.style.applymap(lambda x: 'background-color: red' if x < min_quantity else '', subset=['Actual Quantity']))
-
-def get_low_stock_items():
-    """الحصول على قائمة المواد التي تحتاج إلى تجديد المخزون"""
-    data = load_data("matrils.json")
-    low_stock = []
+    st.markdown(f"""
+    <div style='font-size: 20px; color: blue;'>Selected Item: {st.session_state.df.loc[row_number, 'Item Name']}</div>
+    <div style='font-size: 20px; color: blue;'>Current Quantity: {int(st.session_state.df.loc[row_number, 'Actual Quantity'])}</div>
+    """, unsafe_allow_html=True)
     
-    for item in data["matril"]:
-        if item["Actual Quantity"] <= item["Monthly Consumption"]:
-            low_stock.append({
-                "Item Name": item["Item Name"],
-                "Actual Quantity": item["Actual Quantity"],
-                "Monthly Consumption": item["Monthly Consumption"]
-            })
-    
-    return low_stock
+    quantity = st.number_input(f'Enter quantity for {tab_name}:', min_value=1, step=1, key=f'{tab_name}_quantity')
+    operation = st.radio(f'Choose operation for {tab_name}:', ('add', 'subtract'), key=f'{tab_name}_operation')
 
-def get_item_history(item_name):
-    """الحصول على سجل التغييرات الخاص بمادة معينة"""
-    data = load_data("change log.json")
-    history = [entry for entry in data["logs"] if entry["Item Name"] == item_name]
-    return history
+    if st.button('Update Quantity', key=f'{tab_name}_update_button'):
+        update_quantity(row_number, quantity, operation, st.session_state.username)
+    
+    tab_alerts, df_tab = check_tab_quantities(tab_name, min_quantity)
+    if tab_alerts:
+        st.error(f"Low stock for items in {tab_name}:")
+        st.dataframe(df_tab.style.applymap(lambda x: 'background-color: red' if x < min_quantity else '', subset=['Actual Quantity']))
+
+
 
 def export_to_excel(file_path="stock_report.xlsx"):
     """تصدير البيانات إلى ملف Excel"""
