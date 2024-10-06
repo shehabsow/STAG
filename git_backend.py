@@ -192,41 +192,23 @@ if page == 'STG-2024':
             display_tab('Reel Label (Small)', 20)
            
         with tab2:
-            Large = df_Material[df_Material['Item Name'] == 'Reel Label (Large)'].sort_values(by='Item Name')
-            st.dataframe(Large, width=2000)
-            col4, col5, col6 = st.columns([2,1,2])
-            with col4:
-                display_tab('Reel Label (Large)', 60)
+            
+            
+            display_tab('Reel Label (Large)', 60)
         with tab3:
-            Ink = df_Material[df_Material['Item Name'] == 'Ink Reels for Label'].sort_values(by='Item Name')
-            st.dataframe(Ink, width=2000)
-            col4, col5, col6 = st.columns([2,1,2])
-            with col4:
-                display_tab('Ink Reels for Label', 20)
+            display_tab('Ink Reels for Label', 20)
         with tab4:
-            Tape = df_Material[df_Material['Item Name'] == 'Red Tape'].sort_values(by='Item Name')
-            st.dataframe(Tape, width=2000)
-            col4, col5, col6 = st.columns([2,1,2])
-            with col4:
-                display_tab('Red Tape', 5)
+            
+            display_tab('Red Tape', 5)
         with tab5:
-            Adhesive = df_Material[df_Material['Item Name'] == 'Adhasive Tape'].sort_values(by='Item Name')
-            st.dataframe(Adhesive, width=2000)
-            col4, col5, col6 = st.columns([2,2,2])
-            with col4:
-                display_tab('Adhasive Tape', 100)
+            
+            display_tab('Adhasive Tape', 100)
         with tab6:
-            Cartridges = df_Material[df_Material['Item Name'] == 'Cartridges'].sort_values(by='Item Name')
-            st.dataframe(Cartridges, width=2000)
-            col4, col5, col6 = st.columns([2,1,2])
-            with col4:
-                display_tab('Cartridges', 50)
+          
+            display_tab('Cartridges', 50)
         with tab7:
-            MultiPharma = df_Material[df_Material['Item Name'] == 'MultiPharma Cartridge'].sort_values(by='Item Name')
-            st.dataframe(MultiPharma, width=2000)
-            col4, col5, col6 = st.columns([2,1,2])
-            with col4:
-                display_tab('MultiPharma Cartridge', 5)
+            
+            display_tab('MultiPharma Cartridge', 5)
 
         st.button("Update page")
         csv = df_Material.to_csv(index=False)
