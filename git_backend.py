@@ -177,10 +177,10 @@ else:
         
         with tab1:
             Small = df_Material[df_Material['Item Name'] == 'Reel Label (Small)'].sort_values(by='Item Name')
-                st.dataframe(Small, width=2000)
-                col4, col5, col6 = st.columns([2,1,2])
-                with col4:
-                    display_tab('Reel Label (Small)', 20)
+            st.dataframe(Small, width=2000)
+            col4, col5, col6 = st.columns([2,1,2])
+            with col4:
+                display_tab('Reel Label (Small)', 20)
                     
         with tab2:
             display_tab('Reel Label (Large)', 60)
