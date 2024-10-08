@@ -4,6 +4,7 @@ from datetime import datetime
 from github import Github
 from io import StringIO
 import json
+egypt_tz = pytz.timezone('Africa/Cairo')
 def load_users():
     try:
         with open('users.json', 'r') as f:
