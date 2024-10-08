@@ -6,6 +6,8 @@ from io import StringIO
 import json
 import pytz
 egypt_tz = pytz.timezone('Africa/Cairo')
+df_Material = pd.read_csv('matril.csv')
+logs_df =  pd.read_csv('logs.csv')
 def load_users():
     try:
         with open('users.json', 'r') as f:
