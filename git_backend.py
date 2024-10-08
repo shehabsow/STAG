@@ -72,10 +72,8 @@ def update_quantity(row_index, quantity, operation, username):
 # وظيفة تحديث ملف CSV على GitHub
 def update_csv_on_github(df, filename, commit_message):
     # التوكن الخاص بك (استبدل بـ التوكن الخاص بك)
-    g = Github("your_github_token")
-    
-    # الوصول إلى الريبو والمجلد الذي يحتوي على الملف
-    repo = g.get_repo("your_github_username/your_repo_name")
+    g = Github(st.secrets["GITHUB_TOKEN"])
+    repo = g.get_repo(st.secrets["REPO_NAME"])
     contents = repo.get_contents(filename)
     
     # تحويل DataFrame إلى نص CSV
