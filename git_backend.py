@@ -56,7 +56,7 @@ def update_quantity(row_index, quantity, operation, username):
     update_csv_on_github(logs_df, 'logs.csv', "Updated logs CSV")
 
 
-    check_quantities()
+
 
 def update_csv_on_github(df, filename, commit_message):
     g = Github(st.secrets["GITHUB_TOKEN"])
