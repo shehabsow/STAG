@@ -1,27 +1,21 @@
-import json
-from github import Github
-import json
-from datetime import datetime, timedelta
-import pytz
-import pandas as pd
-import streamlit as st
-# تهيئة المنطقة الزمنية للقاهرة
-egypt_tz = pytz.timezone('Africa/Cairo')
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
 from github import Github
 from io import StringIO
 
-# تحميل بيانات المستخدمين
 def load_users():
-    return {
-        "admin": {"name": "Admin", "password": "admin123"},
-        # يمكنك إضافة المزيد من المستخدمين هنا
-    }
+    try:
+        with open('users.json', 'r') as f:
+            return json.load(f)
+    except (FileNotFoundError, json.JSONDecodeError):
+        return {
+            "knhp322": {"password": "knhp322", "first_login": True, "name": "Shehab Ayman", "last_password_update": str(datetime.now(egypt_tz))},
+            "KFXW551": {"password": "KFXW551", "first_login": True, "name": "Hossameldin Mostafa", "last_password_update": str(datetime.now(egypt_tz))},
+            "knvp968": {"password": "knvp968", "first_login": True, "name": "Mohamed Nader", "last_password_update": str(datetime.now(egypt_tz))},
+            "kcqw615": {"password": "kcqw615", "first_login": True, "name": "Tareek Mahmoud", "last_password_update": str(datetime.now(egypt_tz))}}
 
-# وظيفة تسجيل الدخول
+
 def login(username, password):
     users = load_users()
     if username in users and users[username]['password'] == password:
@@ -30,7 +24,7 @@ def login(username, password):
     else:
         st.error("Invalid username or password")
 
-# وظيفة تحديث الكمية
+
 def update_quantity(row_index, quantity, operation, username):
     last_month = st.session_state.df.loc[row_index, 'Actual Quantity']
     
@@ -38,15 +32,9 @@ def update_quantity(row_index, quantity, operation, username):
         st.session_state.df.loc[row_index, 'Actual Quantity'] += quantity
     elif operation == 'subtract':
         st.session_state.df.loc[row_index, 'Actual Quantity'] -= quantity
-    
     new_quantity = st.session_state.df.loc[row_index, 'Actual Quantity']
-    
-    # حفظ التعديلات في ملف محلي
     st.session_state.df.to_csv('matril.csv', index=False)
-    
-    # تحديث الملف على GitHub
     update_csv_on_github(st.session_state.df, 'matril.csv', "Updated CSV with new quantity")
-
     st.success(f"Quantity updated successfully by {username}! New Quantity: {int(new_quantity)}")
     
     log_entry = {
@@ -58,57 +46,47 @@ def update_quantity(row_index, quantity, operation, username):
         'operation': operation
     }
     st.session_state.logs.append(log_entry)
-    
-    # حفظ السجلات في CSV محلي
     logs_df = pd.DataFrame(st.session_state.logs)
     logs_df.to_csv('logs.csv', index=False)
-    
-    # تحديث ملف السجلات على GitHub
+
     update_csv_on_github(logs_df, 'logs.csv', "Updated logs CSV")
 
-    # تحقق من الكميات لتحديث التنبيهات
+
     check_quantities()
 
-# وظيفة تحديث ملف CSV على GitHub
 def update_csv_on_github(df, filename, commit_message):
-    # التوكن الخاص بك (استبدل بـ التوكن الخاص بك)
     g = Github(st.secrets["GITHUB_TOKEN"])
     repo = g.get_repo(st.secrets["REPO_NAME"])
     contents = repo.get_contents(filename)
-    
-    # تحويل DataFrame إلى نص CSV
     csv_buffer = StringIO()
     df.to_csv(csv_buffer, index=False)
-    
-    # تحديث الملف على GitHub
     repo.update_file(contents.path, commit_message, csv_buffer.getvalue(), contents.sha, branch="main")
 
-# وظيفة التحقق من الكميات وتحديث التنبيهات
-def check_quantities():
-    new_alerts = []
-    for index, row in st.session_state.df.iterrows():
-        if row['Actual Quantity'] < 100:  # غير العتبة حسب الحاجة
-            new_alerts.append(row['Item Name'])
-            
-    st.session_state.alerts = new_alerts
 
-# وظيفة عرض كل تبويب وتحديث الكميات
+
+def check_tab_quantities(tab_name, min_quantity):
+    df_tab = st.session_state.df[st.session_state.df['Item Name'] == tab_name]
+    tab_alerts = df_tab[df_tab['Actual Quantity'] < min_quantity]['Item Name'].tolist()
+   
+    return tab_alerts, df_tab
+
 def display_tab(tab_name, min_quantity):
     st.header(f'{tab_name}')
     row_number = st.number_input(f'Select row number for {tab_name}:', min_value=0, max_value=len(st.session_state.df)-1, step=1, key=f'{tab_name}_row_number')
-    
     st.markdown(f"""
     <div style='font-size: 20px; color: blue;'>Selected Item: {st.session_state.df.loc[row_number, 'Item Name']}</div>
     <div style='font-size: 20px; color: blue;'>Current Quantity: {int(st.session_state.df.loc[row_number, 'Actual Quantity'])}</div>
     """, unsafe_allow_html=True)
-    
     quantity = st.number_input(f'Enter quantity for {tab_name}:', min_value=1, step=1, key=f'{tab_name}_quantity')
     operation = st.radio(f'Choose operation for {tab_name}:', ('add', 'subtract'), key=f'{tab_name}_operation')
-
     if st.button('Update Quantity', key=f'{tab_name}_update_button'):
         update_quantity(row_number, quantity, operation, st.session_state.username)
 
-# وظيفة تنظيف السجلات
+    tab_alerts, df_tab = check_tab_quantities(tab_name, min_quantity)
+    if tab_alerts:
+        st.error(f"Low stock for items in {tab_name}:")
+        st.dataframe(df_tab.style.applymap(lambda x: 'background-color: red' if x < min_quantity else '', subset=['Actual Quantity']))
+
 def clear_logs():
     st.session_state.logs = []
     logs_df = pd.DataFrame(columns=['user', 'time', 'item', 'old_quantity', 'new_quantity', 'operation'])
@@ -117,7 +95,7 @@ def clear_logs():
     
 users = load_users()
 
-# واجهة تسجيل الدخول
+
 if 'logged_in' not in st.session_state:
     st.session_state.logged_in = False
     st.session_state.logs = []
@@ -135,7 +113,6 @@ if not st.session_state.logged_in:
 else:
     st.markdown(f"<div style='text-align: right; font-size: 20px; color: green;'>Logged in by: {users[st.session_state.username]['name']}</div>", unsafe_allow_html=True)
     
-    # تحميل البيانات
     if 'df' not in st.session_state:
         st.session_state.df = pd.read_csv('matril.csv')
     try:
@@ -199,7 +176,12 @@ else:
         ])
         
         with tab1:
-            display_tab('Reel Label (Small)', 20)
+            Small = df_Material[df_Material['Item Name'] == 'Reel Label (Small)'].sort_values(by='Item Name')
+                st.dataframe(Small, width=2000)
+                col4, col5, col6 = st.columns([2,1,2])
+                with col4:
+                    display_tab('Reel Label (Small)', 20)
+                    
         with tab2:
             display_tab('Reel Label (Large)', 60)
         with tab3:
